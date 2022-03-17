@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 import maya.cmds as cmds
 from cgitb import enable
 from functools import partial
@@ -60,6 +59,40 @@ class ColorMapping(dict):
 
     def get_all_color_names(self):
         return [k for k,v in sorted(self['data'].items(), key=lambda item: item[1])]
+    
+    def setIndexColor(self, shpColor):
+        '''Sets the color of a shape using Maya's Index colors.
+        @shpColor(int): Index number of the color we want to set.
+        '''
+        
+        # Save the selection
+        selection = cmds.ls(sl=True) 
+        i = 0
+
+        # CHANGE SHAPE COLOR
+        for obj in selection:
+            # Verify and save the shapes in a list
+            if cmds.nodeType(selection[i]) == "transform":
+                shapeList = cmds.listRelatives(selection[i], c=1, s=1, f=1)
+            else:
+                shapeList.append(selection[i])
+            # Change the selected shapes colors
+            for shape in shapeList:
+                cmds.setAttr("{}.overrideEnabled".format(shape), True)
+                cmds.setAttr("{}.overrideRGBColors".format(shape), False)
+                cmds.setAttr("{}.overrideColor".format(shape), shpColor)
+            i = i+1
+
+    def getIndexColor(self):
+        '''This function gets the slider value of the Index color and passes 
+        it onto setIndexColor() function.
+        @slider(str): String with the full name of the Index Color slider.
+        '''
+        
+        value = cmds.colorIndexSliderGrp("slider", query=True, value=True)
+        value = value - 1
+        print(value)
+        self.setIndexColor(value)
 
 
 
@@ -94,7 +127,7 @@ class myWindow:
             max=31,
             cw3 = (100, 30, 72), 
             enable = True,
-            cc = partial(self.getIndexColor)
+            cc = partial(self.colors.getIndexColor)
         )
 
         self.widgets['buttons_layout'] = cmds.shelfLayout(spacing=10)
@@ -132,38 +165,5 @@ class myWindow:
             cmds.setAttr("{}.useOutlinerColor".format(i), True)
             cmds.setAttr("{}.outlinerColor".format(i), *self.colors.get_rgb(color))
 
-    def setIndexColor(self, shpColor):
-        '''Sets the color of a shape using Maya's Index colors.
-        @shpColor(int): Index number of the color we want to set.
-        '''
-        
-        # Save the selection
-        selection = cmds.ls(sl=True) 
-        i = 0
-
-        # CHANGE SHAPE COLOR
-        for obj in selection:
-            # Verify and save the shapes in a list
-            if cmds.nodeType(selection[i]) == "transform":
-                shapeList = cmds.listRelatives(selection[i], c=1, s=1, f=1)
-            else:
-                shapeList.append(selection[i])
-            # Change the selected shapes colors
-            for shape in shapeList:
-                cmds.setAttr("{}.overrideEnabled".format(shape), True)
-                cmds.setAttr("{}.overrideRGBColors".format(shape), False)
-                cmds.setAttr("{}.overrideColor".format(shape), shpColor)
-            i = i+1
-
-    def getIndexColor(self, *args):
-        '''This function gets the slider value of the Index color and passes 
-        it onto setIndexColor() function.
-        @slider(str): String with the full name of the Index Color slider.
-        '''
-        
-        value = cmds.colorIndexSliderGrp("slider", query=True, value=True)
-        value = value - 1
-        print(value)
-        setIndexColor(value)
 
 myWin = myWindow()
